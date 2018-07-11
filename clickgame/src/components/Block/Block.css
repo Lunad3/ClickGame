@@ -1,0 +1,10 @@
+.block {
+    margin: 20px;
+    width: 200px;
+    height: fit-content;
+}
+
+.block .colorRow{
+    width: 100%;
+    height: 40px;
+}
