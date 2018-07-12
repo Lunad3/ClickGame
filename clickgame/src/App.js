@@ -13,7 +13,7 @@ class App extends Component {
   COLORSPERBLOCK = 2;
   NUMBLOCKS = 4;
 
-  choicesTree = (parent,counter)=>{
+  choicesTree = (node,counter)=>{
     if (counter>0){
       counter--;
       for (let i=0; i<this.COLORSUSED; i++){
@@ -23,13 +23,28 @@ class App extends Component {
           allChildrenSelected:true,
           isLeaf:true
         };  
-        parent.children[this.COLORS[i]] = this.choicesTree(child,counter);
+        node.children[this.COLORS[i]] = this.choicesTree(child,counter);
       }
-      parent.isLeaf = false;
-      parent.allChildrenSelected = false;
+      node.isLeaf = false;
+      node.allChildrenSelected = false;
     }
-    return parent;
+    return node;
   };
+
+  //returns 0 if all children have been selected, else a child is not selected
+  updateChildren = (children)=>{
+    for(let child in children){
+      if (children[child])
+    }
+  };
+
+  selectNode = (node)=>{
+    node.selected = true;
+    if (!this.updateChildren(node)){
+      node.allChildrenSelected = true;
+    }
+  };
+
 
   optionsLeft = (colorsSelected)=>{
     return Math.pow(this.COLORSUSED,(this.COLORSPERBLOCK - colorsSelected));
