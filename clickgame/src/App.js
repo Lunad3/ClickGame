@@ -8,35 +8,84 @@ import "./App.css";
 
 class App extends Component {
 
-  MAXCOLORS = 1;
-  NUMBLOCS = 4;
   COLORS = ["yellow","green","red","blue"];
+  COLORSUSED = 0||this.COLORS.length;
+  COLORSPERBLOCK = 2;
+  NUMBLOCKS = 4;
 
-  randomColor = ()=>{
-    const color = this.COLORS[Math.floor(Math.random() * this.COLORS.length)];
-    // console.log(color);
-    return color;
+  choicesTree = (parent,counter)=>{
+    if (counter>0){
+      counter--;
+      for (let i=0; i<this.COLORSUSED; i++){
+        const child = {
+          children:{},
+          isSelcted:false,
+          allChildrenSelected:true,
+          isLeaf:true
+        };  
+        parent.children[this.COLORS[i]] = this.choicesTree(child,counter);
+      }
+      parent.isLeaf = false;
+      parent.allChildrenSelected = false;
+    }
+    return parent;
   };
 
-  randomColorArray = ()=>{
-    let colorArr = [];
-    for(let i=0; i<this.MAXCOLORS; i++){
-      colorArr.push(this.randomColor());
-    }
-    return colorArr;
+  optionsLeft = (colorsSelected)=>{
+    return Math.pow(this.COLORSUSED,(this.COLORSPERBLOCK - colorsSelected));
   };
 
-  generateBlocks = ()=>{
-    let blocks = [];
-    for (let i=0; i<this.NUMBLOCS;i++){
-      blocks.push(<Block colorArr={this.randomColorArray()} key={i}/>);
+  removeColors = (colorArr)=>{
+    let choices = COLORS;
+    for(let i=0; i<colorArr.length; i++){
+      choices.splice(colorArr.indexOf(colorArr[i]),1);
     }
-    return blocks;
-  }
+    return choices;
+  };
+
+  refineChoices = (colorArr,blocksArr)=>{
+    let choices = this.COLORS;
+    const colorIndex = colorArr.length-1;
+    if(colorIndex == -1){
+      return choices;
+    }
+    const color = colorArr[colorIndex];
+    let newBlocksArr = [];
+    for(let blockIndex=0; blockIndex<blocksArr.length; blockIndex++){
+      if(blocksArr[blockIndex][colorIndex] == color){
+        newBlocksArr.push(blocksArr[blockIndex]);
+      }
+    }
+
+    return choices;
+  };
+
+  randomIndex = (arr)=>{
+    const index = arr[Math.floor(Math.random() * arr.length)];
+    return index;
+  };
+
+  newColorArray = (colorArr,blocksArr)=>{
+    if(colorArr.length < this.COLORSPERBLOCK){
+      const choices = this.refineChoices(colorArr,blocksArr);
+      colorArr.push(choices[this.randomIndex(choices)])
+      return this.newColorArray(colorArr);
+    }else if(colorArr.length >= this.COLORSPERBLOCK){
+      return colorArr;
+    }
+    return 1;
+  };
+
+  newBlock = ()=>{
+    const newBlock = <Block colorArr={this.newColorArray([],this.state.selected)}/>
+    blocksArr.push(newBlock);
+    return newBlock;
+  };
 
   // Setting this.state.friends to the friends json array
   state = {
-    selected:[]
+    choices: this.choicesTree({},this.COLORSPERBLOCK),
+    choicesLeft: this.optionsLeft(0)
   };
 
   removeFriend = id => {
@@ -45,10 +94,6 @@ class App extends Component {
     // Set this.state.friends equal to the new friends array
     this.setState({ friends });
   };
-
-
-  // Map over this.state.friends and render a FriendCard component for each friend object
-
 
   render() {
     return (
