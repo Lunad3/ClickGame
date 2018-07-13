@@ -5,13 +5,26 @@ import Block from "./components/Block";
 import "./App.css";
 
 class App extends Component {
-
+  // GAME VARIABLES
+  //  COLORS: list of all colors that can be used
   COLORS = ["yellow","green","red","blue"];
-  COLORSUSED = 0||this.COLORS.length;
+  //  COLORSUSED: number of colors from COLORS list that want to be used for game
+  COLORSUSED = this.COLORS.length;
+  //  COLORSPERBLOC: number of colors that will fit in a block
   COLORSPERBLOCK = 2;
+  //  NUMBLOCKS: number of blocks that will be displayed on screen
+  //    , plan to increase as game continues to increase difficulty
   NUMBLOCKS = 4;
+  //  colorId: each block is given and index as an id, then each node
+  //    in choices Tree will be given a key, (for react to use)
   colorId = this.NUMBLOCKS + 1;
 
+  //  playerLost: bool to determine if player has lost game, and theirfore
+  //    should not let player select blocks (refresh button does not work)
+  playerLost = false;
+
+  // choicesTree: recursively generate tree where each node is a color,
+  //    each branch path represents an block color order
   choicesTree = (node,counter)=>{
     node.children = {};
     node.allChildrenSelected = false;
@@ -29,50 +42,22 @@ class App extends Component {
     return node;
   };
 
-  optionsLeft = (colorsSelected)=>{
-    return Math.pow(this.COLORSUSED,(this.COLORSPERBLOCK - colorsSelected));
-  };
-
+  //  choicesLeft: number of unique arrangements of colors within a block
+  choicesLeft = Math.pow(this.COLORSUSED,this.COLORSPERBLOCK);
+  // choices: tree where colors are nodes and each branch is a unique color order
+  choices = this.choicesTree({},this.COLORSPERBLOCK)
+  // state: intend to use to refresh the page
   state = {
-    choices: this.choicesTree({},this.COLORSPERBLOCK),
-    choicesLeft: this.optionsLeft(0)
+    blocks:[]
   };
 
-  //---------------------------------------------------------------------------------
-
-  // returns 0 if all children have been selected, else a child is not selected
-  updateChildren = (node)=>{
-    if(node.isLeaf || node.allChildrenSelected){
-      return 0;
-    }else if(node.selected){
-      let result = 0;
-      for(let child in node.children){
-        result += this.updateChildren(child);
-      }
-      return result;
-    }
-    return 1;
-  };
-
-  selectNode = (node)=>{
-    node.selected = true;
-    if (this.updateChildren(node) === 0){
-      node.allChildrenSelected = true;
-    }
-  };
-
-  removeColors = (colorArr)=>{
-    let choices = this.COLORS;
-    for(let i=0; i<colorArr.length; i++){
-      choices.splice(colorArr.indexOf(colorArr[i]),1);
-    }
-    return choices;
-  };
-
+  // randomIndex: select a random index from the array (returns an int)
   randomIndex = (arr)=>{
     return Math.floor(Math.random() * arr.length);
   };
 
+  // randomColorArr: recursively generate random array of colors to display within a block
+  //  using the choices Tree as reference for keys
   randomColorArr = (result,node,count)=>{
     if(count > 0){
       count--;
@@ -88,42 +73,65 @@ class App extends Component {
     }
   };
 
+  //  newBlock(NOT FINISHED): generate a block that has not been selected yet 
   newBlock = ()=>{
-    const block = <Block colorArr={this.randomColorArray([],this.state.selected)}/>
+    const block = 
+      <Block 
+        colorArr={this.randomColorArray([],this.selected)}
+      />
     return block;
   };
 
-  generateBlocks = ()=>{
-    let blocks = [];
-    const uniqueBlockIndex = null;//Math.floor(Math.random() *this.NUMBLOCKS);
-    console.log(uniqueBlockIndex);
-    for (let i=0; i<this.NUMBLOCKS; i++){
-      console.log("B: "+(i+1) + "/"+this.NUMBLOCKS);
-      let colorDataObj = null;
-      if (i === uniqueBlockIndex){
-        // colorDataObj = this.newColorArray();
-      }else{
-        colorDataObj = this.randomColorArr([],this.state.choices,this.COLORSPERBLOCK);
-      }
-      console.log(colorDataObj);
-      blocks.push(<Block colorArr={colorDataObj} key={i}/>);
+  // selectBlock(NOT FINISHED): when a block is clicked, determine if it has already been selected
+  //   if clicked unselected block then continue game, else stop
+  selectBlock = (colorArr)=>{
+    let current = this.choices;
+    for (let i=0; i<colorArr.length; i++){
+      const colorObj = colorArr[i];
+      current = current.children[colorObj.color];
     }
-    return blocks;
+    if (!current.isSelcted){
+      current.isSelcted = true;
+      this.choicesLeft--;
+      this.generateBlocks();
+    }else{
+      const blocks = <h3>SORRY YOU LOST, REFRESH PAGE TO TRY AGAIN</h3>;
+      this.setState({blocks});
+      this.playerLost = true;
+    }
   };
 
-  removeFriend = id => {
-    // Filter this.state.friends for friends with an id not equal to the id being removed
-    const friends = this.state.friends.filter(friend => friend.id !== id);
-    // Set this.state.friends equal to the new friends array
-    this.setState({ friends });
+  //  generateBlocks(NOT FINISHED): if player has not lost, create 1 unselected block (if possible, if not possible then player has won game)
+  //    and the rest of the block are random (can contain unselected blocks and duplicates (future fix))
+  generateBlocks = ()=>{
+    if(!this.playerLost){
+      let blocks = [];
+      const uniqueBlockIndex = null;//Math.floor(Math.random() *this.NUMBLOCKS);
+      // console.log(uniqueBlockIndex);
+      for (let i=0; i<this.NUMBLOCKS; i++){
+        let colorDataObj = null;
+        if (i === uniqueBlockIndex){
+          // colorDataObj = this.newColorArray();
+        }else{
+          colorDataObj = this.randomColorArr([],this.choices,this.COLORSPERBLOCK);
+        }
+        blocks.push(<Block
+            colorArr={colorDataObj}
+            key={i}
+            selectBlock={this.selectBlock}
+          />);
+      }
+      this.setState({blocks});
+    }
   };
 
   render() {
     return (
       <Wrapper>
+        <button onClick={()=>{this.generateBlocks()}}>REFRESH</button>
         <Title>Click Game</Title>
-        {this.generateBlocks()}
-        </Wrapper>
+        {this.state.blocks}
+      </Wrapper>
     );
   }
 }
