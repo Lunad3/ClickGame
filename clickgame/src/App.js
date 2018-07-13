@@ -14,44 +14,54 @@ class App extends Component {
   NUMBLOCKS = 4;
 
   choicesTree = (node,counter)=>{
+    node.children = {};
+    node.allChildrenSelected = false;
+    node.isSelcted = false;
     if (counter>0){
       counter--;
-      for (let i=0; i<this.COLORSUSED; i++){
-        const child = {
-          children:{},
-          isSelcted:false,
-          allChildrenSelected:true,
-          isLeaf:true
-        };  
-        node.children[this.COLORS[i]] = this.choicesTree(child,counter);
-      }
       node.isLeaf = false;
-      node.allChildrenSelected = false;
+      for (let i=0; i<this.COLORSUSED; i++){
+        node.children[this.COLORS[i]] = this.choicesTree({},counter);
+      };
+    }else if (counter <= 0){
+      node.isLeaf = true;
     }
     return node;
   };
-
-  //returns 0 if all children have been selected, else a child is not selected
-  updateChildren = (children)=>{
-    for(let child in children){
-      if (children[child])
-    }
-  };
-
-  selectNode = (node)=>{
-    node.selected = true;
-    if (!this.updateChildren(node)){
-      node.allChildrenSelected = true;
-    }
-  };
-
 
   optionsLeft = (colorsSelected)=>{
     return Math.pow(this.COLORSUSED,(this.COLORSPERBLOCK - colorsSelected));
   };
 
+  state = {
+    choices: this.choicesTree({},this.COLORSPERBLOCK),
+    choicesLeft: this.optionsLeft(0)
+  };
+//---------------------------------------------------------------------------------
+
+  // returns 0 if all children have been selected, else a child is not selected
+  updateChildren = (node)=>{
+    if(node.isLeaf || node.allChildrenSelected){
+      return 0;
+    }else if(node.selected){
+      let result = 0;
+      for(let child in node.children){
+        result += this.updateChildren(child);
+      }
+      return result;
+    }
+    return 1;
+  };
+
+  selectNode = (node)=>{
+    node.selected = true;
+    if (this.updateChildren(node) === 0){
+      node.allChildrenSelected = true;
+    }
+  };
+
   removeColors = (colorArr)=>{
-    let choices = COLORS;
+    let choices = this.COLORS;
     for(let i=0; i<colorArr.length; i++){
       choices.splice(colorArr.indexOf(colorArr[i]),1);
     }
@@ -61,13 +71,13 @@ class App extends Component {
   refineChoices = (colorArr,blocksArr)=>{
     let choices = this.COLORS;
     const colorIndex = colorArr.length-1;
-    if(colorIndex == -1){
+    if(colorIndex === -1){
       return choices;
     }
     const color = colorArr[colorIndex];
     let newBlocksArr = [];
     for(let blockIndex=0; blockIndex<blocksArr.length; blockIndex++){
-      if(blocksArr[blockIndex][colorIndex] == color){
+      if(blocksArr[blockIndex][colorIndex] === color){
         newBlocksArr.push(blocksArr[blockIndex]);
       }
     }
@@ -81,27 +91,23 @@ class App extends Component {
   };
 
   newColorArray = (colorArr,blocksArr)=>{
-    if(colorArr.length < this.COLORSPERBLOCK){
-      const choices = this.refineChoices(colorArr,blocksArr);
-      colorArr.push(choices[this.randomIndex(choices)])
-      return this.newColorArray(colorArr);
-    }else if(colorArr.length >= this.COLORSPERBLOCK){
-      return colorArr;
-    }
-    return 1;
+
   };
+
+  randomColorArray = (colorArr,blocksArr)=>{
+    
+  }
 
   newBlock = ()=>{
     const newBlock = <Block colorArr={this.newColorArray([],this.state.selected)}/>
-    blocksArr.push(newBlock);
     return newBlock;
   };
 
-  // Setting this.state.friends to the friends json array
-  state = {
-    choices: this.choicesTree({},this.COLORSPERBLOCK),
-    choicesLeft: this.optionsLeft(0)
+  generateBlocks = ()=>{
+    let blocks = [];
+    
   };
+
 
   removeFriend = id => {
     // Filter this.state.friends for friends with an id not equal to the id being removed
